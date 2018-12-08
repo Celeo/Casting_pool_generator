@@ -121,9 +121,9 @@ div#app
                 input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked" :disabled="yantra.name === 'Murda' && castingMethod.indexOf('Rote') === -1")
                 label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }} DP
           br
-          div.form-group(v-show="reachCastingTime === 'Ritual'")
+          div.form-group
             label(for="yantraRitualTime") Extend ritual interval increase (+1 DP per)
-            input#yantraRitualTime.form-control(type="number" v-model.number="yantraRitualTime" min="0" max="5")
+            input#yantraRitualTime.form-control(type="number" v-model.number="yantraRitualTime" min="0" max="5" :disabled="reachCastingTime === 'Instant'")
           hr
           h5 Paradox modifiers
           div.form-check(v-for="mod in paradoxModifiers")
@@ -147,6 +147,10 @@ div#app
             span  {{ manaCost }}
           p Casting Time:
             span  {{ castingTime }}
+          p Total potency:
+            span  {{ totalPotency }}
+          p Primary spell factor boost:
+            span  {{ primarySpellFactorBoost }}
           hr
           p
             strong Dice pool:
@@ -154,7 +158,6 @@ div#app
           p
             strong Paradox pool:
               span  {{ paradoxTotal }}
-          //- total potency?
           div(v-show="additionalMessages.length > 0")
             h4 Additional notes
             ul.pl-3
@@ -254,14 +257,27 @@ export default {
     },
     paradoxTotal () {
       let val = 0
+      let any = false
       const fromReaches = this.reachesUsed - this.freeReaches
       val += fromReaches < 0 ? 0 : fromReaches * paradoxFromGnosis[this.gnosis]
+      if (val > 0) {
+        any = true
+      }
       for (let mod of this.paradoxModifiers) {
         if (mod.checked) {
           val += parseInt(mod.dp)
+          any = true
         }
       }
-      val += this.paradoxSameScene
+      if (this.paradoxSameScene > 0) {
+        val += this.paradoxSameScene
+        any = true
+      }
+      val -= this.manaReduceParadox
+      val = val > 0 ? val : 0
+      if (any && val === 0) {
+        val = '1 chance die'
+      }
       return val
     },
     manaCost () {
@@ -280,6 +296,15 @@ export default {
       val += this.effectReaches
       val += parseInt(this.reachDuration.split(',')[1])
       val += parseInt(this.reachAOE.split(',')[0])
+      if (this.reachCastingTime === 'Instant') {
+        val += 1
+      }
+      if (this.reachRange === 'Sensory') {
+        val += 1
+      }
+      if (this.reachPotency > 1) {
+        val += this.reachPotency - 1
+      }
       return val
     },
     castingTime () {
@@ -299,6 +324,12 @@ export default {
         }
         return `${rounds} round${rounds > 1 ? 's' : ''}`
       }
+    },
+    totalPotency () {
+      return 1 + this.reachPotency - 1
+    },
+    primarySpellFactorBoost () {
+      return this.casterCorrespondingArcanum - 1
     },
     additionalMessages () {
       let messages = []
@@ -335,6 +366,10 @@ export default {
     castingMethod (newVal, oldVal) {
       if (newVal === 'Rote from grimoire') {
         this.reachCastingTime = 'Ritual'
+        this.reachRange = 'Touch'
+        this.reachDuration = '0,0,0'
+        this.reachAOE = '0,0'
+        this.reachPotency = 1
       }
       if (newVal.indexOf('Rote') === -1) {
         this.yantras[4].checked = false
@@ -345,14 +380,9 @@ export default {
         this.yantraRitualTime = 0
       }
     }
-    // TODO: if (this.castingMethod === 'Rote from grimoire') then: cannot use ANY reach
+    // TODO limit yantras used based on gnosis
   }
 }
-
-/*
-  Dev notes
-    - TODO need to implement the free primary spell factor increase based on spell arcanum vs caster arcanum
-*/
 </script>
 
 <style lang="stylus">
