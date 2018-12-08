@@ -145,6 +145,8 @@ div#app
             span  {{ reachesUsed }}
           p Total mana cost:
             span  {{ manaCost }}
+          p Casting Time:
+            span  {{ castingTime }}
           hr
           p
             strong Dice pool:
@@ -153,8 +155,6 @@ div#app
             strong Paradox pool:
               span  {{ paradoxTotal }}
           //- total potency?
-          //- total casting time - time it takes to cast (casting time * gnosis + grimoire + yantra count)?
-          //- mana cost
           div(v-show="additionalMessages.length > 0")
             h4 Additional notes
             ul.pl-3
@@ -173,6 +173,19 @@ const paradoxFromGnosis = {
   8: 3,
   9: 4,
   10: 4
+}
+
+const ritualTimeFromGnosis = {
+  1: 180,
+  2: 180,
+  3: 60,
+  4: 60,
+  5: 30,
+  6: 30,
+  7: 10,
+  8: 10,
+  9: 10,
+  10: 10
 }
 
 export default {
@@ -269,6 +282,24 @@ export default {
       val += parseInt(this.reachAOE.split(',')[0])
       return val
     },
+    castingTime () {
+      if (this.reachCastingTime === 'Ritual') {
+        // time based on gnosis * additional multiplier for bonus
+        let minutes = ritualTimeFromGnosis[this.gnosis]
+        if (this.yantraRitualTime > 0) {
+          minutes *= (this.yantraRitualTime + 1)
+        }
+        return `${minutes} minute${minutes > 1 ? 's' : ''}`
+      } else {
+        // 1 round + number of rounds required by yantas activated > 1
+        let rounds = 1
+        const yantasUsed = this.yantras.filter(e => e.checked).length
+        if (yantasUsed > 1) {
+          rounds += yantasUsed - 1
+        }
+        return `${rounds} round${rounds > 1 ? 's' : ''}`
+      }
+    },
     additionalMessages () {
       let messages = []
       if (this.castingMethod === 'Rote from grimoire') {
@@ -314,12 +345,13 @@ export default {
         this.yantraRitualTime = 0
       }
     }
+    // TODO: if (this.castingMethod === 'Rote from grimoire') then: cannot use ANY reach
   }
 }
 
 /*
   Dev notes
-    - Need to implement the free primary spell factor increase based on spell arcanum vs caster arcanum
+    - TODO need to implement the free primary spell factor increase based on spell arcanum vs caster arcanum
 */
 </script>
 
