@@ -7,6 +7,7 @@ div#app
     div.container
       div.row
         div.col-9
+          //- === LEFT ===
           h2 Entry
           br
           //- Basics
@@ -44,7 +45,7 @@ div#app
                 label.form-check-label(for="castingMethodRoteGrimoire") Rote from grimoire
               div.form-check
                 input.form-check-input(type="radio" id="castingMethodRoteSelfDesign" v-model="castingMethod" value="Rote self-designed")
-                label.form-check-label(for="castingMethodRoteSelfDesign") Rote self-designed
+                label.form-check-label(for="castingMethodRoteSelfDesign") Rote that's self-designed
               div.form-check
                 input.form-check-input(type="radio" id="castingMethodRoteMemory" v-model="castingMethod" value="Rote from memory")
                 label.form-check-label(for="castingMethodRoteMemory") Rote from memory
@@ -58,7 +59,7 @@ div#app
           h5 Reach
           div.form-group
             //- This bit has to be entered by the user as total, because I'm not going to enter all the spells into a JSON file and load it up
-            label(for="effectReaches") Reaches for spell effect changes
+            label(for="effectReaches") Reaches for spell effect changes (these are listed in the spell description)
             input#effectReaches.form-control(type="number" v-model.number="effectReaches" min="0")
           //- For the reach factors, I can list those out and allow the user to select from them
           div.row
@@ -67,7 +68,7 @@ div#app
                 input.form-check-input(type="radio" id="reachCastingTimeRitual" v-model="reachCastingTime" value="Ritual")
                 label.form-check-label(for="reachCastingTimeRitual") Ritual cast
               div.form-check
-                input.form-check-input(type="radio" id="reachCastingTimeInstant" v-model="reachCastingTime" value="Instant")
+                input.form-check-input(type="radio" id="reachCastingTimeInstant" v-model="reachCastingTime" value="Instant" :disabled="castingMethod === 'Rote from grimoire'")
                 label.form-check-label(for="reachCastingTimeInstant") Instant cast (1 reach)
             div.col.left-border
               div.form-check
@@ -93,7 +94,7 @@ div#app
               option(value="1,-8") 1 year (1 reach and -8 DP)
               option(value="1,-10") Indefinite (1 reach and -10 DP and 1 mana)
           div.form-group
-            label(for="reachAOE") Area of effect
+            label(for="reachAOE") Scale
             select#reachAOE.form-control(v-model="reachAOE")
               option(value="0,0") 1 subject, largest subject size 5, arm's reach from a point
               option(value="0,-2") 2 subjects, largest 6, small room (-2 DP)
@@ -106,17 +107,45 @@ div#app
               option(value="1,-6") 40 subjects, largest 20, small factory, or shopping mall (1 reach and -6 DP)
               option(value="1,-8") 80 subjects, largest 25, large factory, or city block (1 reach -8 DP)
               option(value="1,-10") 160 subjects, largest 30, campus or small neighborhood (1 reach and -10 DP)
-          //- Yantras
-          //- Extensions
+          div.form-group.mb-0
+            label(for="reachPotency") Potency
+            input#reachPotency.form-control(type="number" v-model.number="reachPotency" min="1")
+          div.form-check
+            input#reachPotencyAdvanced.form-check-input(type="checkbox" v-model="reachPotencyAdvanced")
+            label(for="reachPotencyAdvanced") +2 to withstand dispellation (1 reach)
+          hr
+          h5 Yantras
+          div.row
+            div.col
+              div.form-check(v-for="yantra in yantras.slice(0, 7)")
+                input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked")
+                label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }}
+            div.col
+              div.form-check(v-for="yantra in yantras.slice(7)")
+                input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked")
+                label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }}
+          br
+          div.form-group(v-show="reachCastingTime === 'Ritual'")
+            label(for="yantraRitualTime") Extend ritual interval increase (+1 DP per)
+            input#yantraRitualTime.form-control(type="number" v-model.number="yantraRitualTime" min="0" max="5")
+          //- TODO mana to reduce paradox dice
         div.col.left-border
+          //- == RIGHT ===
           h2 Calculations
           br
+          p Free reach:
+            span  {{ freeReaches }}
+          p Mana cost:
+            span  {{ manaCost }}
           p
             strong Dice pool:
               span  {{ dicePool }}
           p
             strong Paradox pool:
               span  {{ paradoxTotal }}
+          //- total potency?
+          //- total casting time?
+          //- mana cost
           div(v-show="additionalMessages.length > 0")
             h4 Additional notes
             ul.pl-3
@@ -137,9 +166,25 @@ export default {
       reachRange: 'Touch',
       reachDuration: '0,0',
       reachAOE: '0,0',
+      reachPotency: 1,
+      reachPotencyAdvanced: false,
       modifyingReaches: 0,
-      yantras: [],
-      manaSpent: 0
+      yantras: [
+        { name: 'Demesne', dp: '+2', checked: false },
+        { name: 'Environment', dp: '+1', checked: false },
+        { name: 'Supernal Verge', dp: '+2', checked: false },
+        { name: 'Concentration', dp: '+2', checked: false },
+        { name: 'Murda', dp: '+skill dots in encoded skill', checked: false },
+        { name: 'Mantra', dp: '+2', checked: false },
+        { name: 'Runes', dp: '+2', checked: false },
+        { name: 'Path Tool', dp: '+1', checked: false },
+        { name: 'Order Tool', dp: '+1', checked: false },
+        { name: 'Patrol Tool', dp: 'Special', checked: false },
+        { name: 'Sympathy', dp: '+0 to +2', checked: false },
+        { name: 'Sacrament', dp: '+1 to +2', checked: false },
+        { name: 'Persona', dp: 'Special', checked: false }
+      ],
+      yantraRitualTime: 0
     }
   },
   computed: {
@@ -165,10 +210,19 @@ export default {
       // ...
       return val
     },
+    manaCost () {
+      let val = 0
+      // ...
+      if (this.arcanaType !== 'Ruling') {
+        val += 1
+      }
+      return val
+    },
     additionalMessages () {
       let messages = []
       if (this.castingMethod === 'Rote from grimoire') {
         messages.push('Cannot use reach to cast the spell')
+        messages.push('Cannot cast the spell instantly')
         messages.push('Ritual casting time is doubled')
         messages.push('Dice pool gets the rote quality')
       }
@@ -187,7 +241,6 @@ export default {
     }
   },
   watch: {
-    // do not allow the caster's corresponding arcanum be lower than the highest arcanum of the spell
     spellHighestArcanum (newVal, oldVal) {
       if (newVal > this.casterCorrespondingArcanum) {
         this.spellHighestArcanum = oldVal
@@ -196,6 +249,16 @@ export default {
     casterCorrespondingArcanum (newVal, oldVal) {
       if (newVal < this.spellHighestArcanum) {
         this.spellHighestArcanum = newVal
+      }
+    },
+    castingMethod (newVal, oldVal) {
+      if (newVal === 'Rote from grimoire') {
+        this.reachCastingTime = 'Ritual'
+      }
+    },
+    reachCastingTime (newVal, oldVal) {
+      if (newVal === 'Instant') {
+        this.yantraRitualTime = 0
       }
     }
   }
