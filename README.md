@@ -1,6 +1,6 @@
 # casting_pool_generator
 
-> Mage the Awakening 2e spellcasting dice pool generator
+A Mage the Awakening 2e spellcasting dice pool generator.
 
 ## Build Setup
 
