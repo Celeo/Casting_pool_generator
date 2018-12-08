@@ -76,20 +76,22 @@ div#app
           div.form-group
             label(for="reachDurationSelection") Duration
             select#reachDurationSelection.form-control(v-model="reachDuration")
-              option(value="0,0") 1 turn
-              option(value="0,-2") 2 turns (-2 DP)
-              option(value="0,-4") 3 turns (-4 DP)
-              option(value="0,-6") 5 turns (-6 DP)
-              option(value="0,-8") 10 turns (-8 DP)
-              option(value="1,0") 1 scene or 1 hour (1 reach)
-              option(value="1,-2") 1 day (1 reach and -2 DP)
-              option(value="1,-4") 1 week (1 reach and -4 DP)
-              option(value="1,-6") 1 month (1 reach and -6 DP)
-              option(value="1,-8") 1 year (1 reach and -8 DP)
-              option(value="1,-10") Indefinite (1 reach and -10 DP and 1 mana)
+              //- value is [mana cost], [reach cost], [dp modifier]
+              option(value="0,0,0") 1 turn
+              option(value="0,0,-2") 2 turns (-2 DP)
+              option(value="0,0,-4") 3 turns (-4 DP)
+              option(value="0,0,-6") 5 turns (-6 DP)
+              option(value="0,0,-8") 10 turns (-8 DP)
+              option(value="0,1,0") 1 scene or 1 hour (1 reach)
+              option(value="0,1,-2") 1 day (1 reach and -2 DP)
+              option(value="0,1,-4") 1 week (1 reach and -4 DP)
+              option(value="0,1,-6") 1 month (1 reach and -6 DP)
+              option(value="0,1,-8") 1 year (1 reach and -8 DP)
+              option(value="1,1,-10") Indefinite (1 reach and -10 DP and 1 mana)
           div.form-group
             label(for="reachAOE") Scale
             select#reachAOE.form-control(v-model="reachAOE")
+              //- value is [reach cost], [dp modifier]
               option(value="0,0") 1 subject, largest subject size 5, arm's reach from a point
               option(value="0,-2") 2 subjects, largest 6, small room (-2 DP)
               option(value="0,-4") 4 subjects, largest 7, large room (-4 DP)
@@ -106,31 +108,44 @@ div#app
             input#reachPotency.form-control(type="number" v-model.number="reachPotency" min="1")
           div.form-check
             input#reachPotencyAdvanced.form-check-input(type="checkbox" v-model="reachPotencyAdvanced")
-            label(for="reachPotencyAdvanced") +2 to withstand dispellation (1 reach)
+            label(for="reachPotencyAdvanced") +2 DP to withstand dispellation (1 reach)
           hr
           h5 Yantras
           div.row
             div.col
               div.form-check(v-for="yantra in yantras.slice(0, 7)")
                 input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked" :disabled="yantra.name === 'Murda' && castingMethod.indexOf('Rote') === -1")
-                label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }}
+                label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }} DP
             div.col
               div.form-check(v-for="yantra in yantras.slice(7)")
                 input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked" :disabled="yantra.name === 'Murda' && castingMethod.indexOf('Rote') === -1")
-                label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }}
+                label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }} DP
           br
           div.form-group(v-show="reachCastingTime === 'Ritual'")
             label(for="yantraRitualTime") Extend ritual interval increase (+1 DP per)
             input#yantraRitualTime.form-control(type="number" v-model.number="yantraRitualTime" min="0" max="5")
-          //- TODO mana to reduce paradox dice
+          hr
+          h5 Paradox modifiers
+          div.form-check(v-for="mod in paradoxModifiers")
+            input.form-check-input(:id="'mod' + mod.name" type="checkbox" v-model="mod.checked")
+            label(:for="'mod' + mod.name") {{ mod.name }}: {{ mod.dp }} DP
+          div.form-group
+            label(for="paradoxSameScene") Number of times you've caused a paradox roll this scene
+            input#paradoxSameScene.form-control(type="number" v-model.number="paradoxSameScene" min="0")
+          div.form-group
+            label(for="manaReduceParadox") Mana to reduce paradox DP
+            input#manaReduceParadox.form-control(type="number" v-model.number="manaReduceParadox" min="0")
         div.col.left-border
           //- == RIGHT ===
           h2 Calculations
           br
-          p Free reach:
+          p Free reaches:
             span  {{ freeReaches }}
-          p Mana cost:
+          p Reaches used:
+            span  {{ reachesUsed }}
+          p Total mana cost:
             span  {{ manaCost }}
+          hr
           p
             strong Dice pool:
               span  {{ dicePool }}
@@ -158,58 +173,89 @@ export default {
       effectReaches: 0,
       reachCastingTime: 'Ritual',
       reachRange: 'Touch',
-      reachDuration: '0,0',
+      reachDuration: '0,0,0',
       reachAOE: '0,0',
       reachPotency: 1,
       reachPotencyAdvanced: false,
       modifyingReaches: 0,
       yantras: [
-        { name: 'Demesne', dp: '+2', checked: false },
-        { name: 'Environment', dp: '+1', checked: false },
-        { name: 'Supernal Verge', dp: '+2', checked: false },
-        { name: 'Concentration', dp: '+2', checked: false },
-        { name: 'Murda', dp: '+skill dots in encoded skill', checked: false },
-        { name: 'Mantra', dp: '+2', checked: false },
-        { name: 'Runes', dp: '+2', checked: false },
-        { name: 'Path Tool', dp: '+1', checked: false },
-        { name: 'Order Tool', dp: '+1', checked: false },
-        { name: 'Patrol Tool', dp: 'Special', checked: false },
-        { name: 'Sympathy', dp: '+0 to +2', checked: false },
-        { name: 'Sacrament', dp: '+1 to +2', checked: false },
-        { name: 'Persona', dp: 'Special', checked: false }
+        { name: 'Demesne', dp: '2', checked: false },
+        { name: 'Environment', dp: '1', checked: false },
+        { name: 'Supernal Verge', dp: '2', checked: false },
+        { name: 'Concentration', dp: '2', checked: false },
+        { name: 'Murda', dp: '(see book)', checked: false },
+        { name: 'Mantra', dp: '2', checked: false },
+        { name: 'Runes', dp: '2', checked: false },
+        { name: 'Path Tool', dp: '1', checked: false },
+        { name: 'Order Tool', dp: '1', checked: false },
+        { name: 'Patrol Tool', dp: '(see book)', checked: false },
+        { name: 'Sympathy', dp: '(see book)', checked: false },
+        { name: 'Sacrament', dp: '(see book)', checked: false },
+        { name: 'Persona', dp: '(see book)', checked: false }
       ],
-      yantraRitualTime: 0
+      yantraRitualTime: 0,
+      paradoxModifiers: [
+        { name: 'Inured to spell', dp: '2', checked: false },
+        // { name: 'Per Paradox roll for you in the scame scene', dp: '1', checked: false },
+        { name: 'Sleepers witness obvious casting', dp: '1', checked: false },
+        { name: 'Dedicated tool as a yantra', dp: '-2', checked: false }
+      ],
+      paradoxSameScene: 0,
+      manaReduceParadox: 0
     }
   },
   computed: {
     freeReaches () {
-      let val = 0
-      if (this.castingMethod === 'Rote ...') {
-        // ...
+      if (this.castingMethod.indexOf('Rote') !== -1) {
+        return 5 - this.spellHighestArcanum + 1
       } else {
-        // this.casterCorrespondingArcanum - this.spellHighestArcanum + 1
+        return this.casterCorrespondingArcanum - this.spellHighestArcanum + 1
       }
-      return val
     },
     dicePool () {
       let val = 0
       val += this.gnosis
       val += this.casterCorrespondingArcanum
-      // yantras
+      for (let yanta of this.yantras) {
+        if (yanta.checked) {
+          if (yanta.dp !== '(see book)') {
+            val += parseInt(yanta.dp)
+          }
+        }
+      }
+      val += parseInt(this.reachDuration.split(',')[2])
+      val += parseInt(this.reachAOE.split(',')[1])
       return val
     },
     paradoxTotal () {
+      // TODO the amount of paradox added per reach is dependent on the caster's gnosis
       let val = 0
-      // val += this.effectReaches + this.modifyingReaches - this.freeReaches
-      // ...
+      const fromReaches = this.reachesUsed - this.freeReaches
+      val += fromReaches < 0 ? 0 : fromReaches
+      for (let mod of this.paradoxModifiers) {
+        if (mod.checked) {
+          val += parseInt(mod.dp)
+        }
+      }
+      val += this.paradoxSameScene
       return val
     },
     manaCost () {
       let val = 0
-      // ...
       if (this.arcanaType !== 'Ruling') {
         val += 1
       }
+      val += this.manaReduceParadox
+      if (this.reachDuration.split(',')[0] === '1') {
+        val += 1
+      }
+      return val
+    },
+    reachesUsed () {
+      let val = 0
+      val += this.effectReaches
+      val += parseInt(this.reachDuration.split(',')[1])
+      val += parseInt(this.reachAOE.split(',')[0])
       return val
     },
     additionalMessages () {
