@@ -36,7 +36,7 @@ div#app
                 input.form-check-input(type="radio" id="arcanaTypeInferior" v-model="arcanaType" value="Inferior")
                 label.form-check-label(for="arcanaTypeInferior") Inferior
             div.col.left-border
-              h5 Special spells
+              h5 Special knowledge
               div.form-check
                 input.form-check-input(type="radio" id="castingMethodRoteGrimoire" v-model="castingMethod" value="Rote from grimoire")
                 label.form-check-label(for="castingMethodRoteGrimoire") Rote from grimoire
@@ -120,6 +120,8 @@ div#app
               div.form-check(v-for="yantra in yantras.slice(7)")
                 input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked" :disabled="yantra.name === 'Murda' && castingMethod.indexOf('Rote') === -1")
                 label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }} DP
+          p.text-danger.mb-1(v-show="overYantraLimitMessage")
+            strong You are using more Yantras than your Gnosis allows (using {{ yantasUsed }}, allowed {{ yantrasAllowed }})
           br
           div.form-group
             label(for="yantraRitualTime") Extend ritual interval increase (+1 DP per)
@@ -143,6 +145,7 @@ div#app
             span  {{ freeReaches }}
           p Reaches used:
             span  {{ reachesUsed }}
+          hr
           p Total mana cost:
             span  {{ manaCost }}
           p Casting Time:
@@ -178,6 +181,7 @@ const paradoxFromGnosis = {
   10: 4
 }
 
+// in minutes
 const ritualTimeFromGnosis = {
   1: 180,
   2: 180,
@@ -189,6 +193,19 @@ const ritualTimeFromGnosis = {
   8: 10,
   9: 10,
   10: 10
+}
+
+const yantraLimitFromGnosis = {
+  1: 2,
+  2: 2,
+  3: 3,
+  4: 3,
+  5: 4,
+  6: 4,
+  7: 5,
+  8: 5,
+  9: 6,
+  10: 6
 }
 
 export default {
@@ -331,6 +348,15 @@ export default {
     primarySpellFactorBoost () {
       return this.casterCorrespondingArcanum - 1
     },
+    overYantraLimitMessage () {
+      return this.yantras.filter(e => e.checked).length > yantraLimitFromGnosis[this.gnosis]
+    },
+    yantasUsed () {
+      return this.yantras.filter(e => e.checked).length
+    },
+    yantrasAllowed () {
+      return yantraLimitFromGnosis[this.gnosis]
+    },
     additionalMessages () {
       let messages = []
       if (this.castingMethod === 'Rote from grimoire') {
@@ -380,7 +406,6 @@ export default {
         this.yantraRitualTime = 0
       }
     }
-    // TODO limit yantras used based on gnosis
   }
 }
 </script>
