@@ -56,26 +56,26 @@ div#app
           h5 Reach
           div.form-group
             label(for="effectReaches") Reaches for spell effect changes (these are listed in the spell description)
-            input#effectReaches.form-control(type="number" v-model.number="effectReaches" min="0")
+            input#effectReaches.form-control(type="number" v-model.number="reach.effect" min="0")
           div.row
             div.col
               div.form-check
-                input.form-check-input(type="radio" id="reachCastingTimeRitual" v-model="reachCastingTime" value="Ritual")
+                input.form-check-input(type="radio" id="reachCastingTimeRitual" v-model="reach.castingTime" value="Ritual")
                 label.form-check-label(for="reachCastingTimeRitual") Ritual cast
               div.form-check
-                input.form-check-input(type="radio" id="reachCastingTimeInstant" v-model="reachCastingTime" value="Instant" :disabled="castingMethod === 'Rote from grimoire'")
+                input.form-check-input(type="radio" id="reachCastingTimeInstant" v-model="reach.castingTime" value="Instant" :disabled="castingMethod === 'Rote from grimoire'")
                 label.form-check-label(for="reachCastingTimeInstant") Instant cast (1 reach)
             div.col.left-border
               div.form-check
-                input.form-check-input(type="radio" id="reachRangeTouch" v-model="reachRange" value="Touch")
+                input.form-check-input(type="radio" id="reachRangeTouch" v-model="reach.range" value="Touch")
                 label.form-check-label(for="reachRangeTouch") Touch range
               div.form-check
-                input.form-check-input(type="radio" id="reachRangeInstant" v-model="reachRange" value="Sensory")
+                input.form-check-input(type="radio" id="reachRangeInstant" v-model="reach.range" value="Sensory")
                 label.form-check-label(for="reachRangeInstant") Sensory range (1 reach)
           br
           div.form-group
             label(for="reachDurationSelection") Duration
-            select#reachDurationSelection.form-control(v-model="reachDuration")
+            select#reachDurationSelection.form-control(v-model="reach.duration")
               //- value is [mana cost], [reach cost], [dp modifier]
               option(value="0,0,0") 1 turn
               option(value="0,0,-2") 2 turns (-2 DP)
@@ -90,7 +90,7 @@ div#app
               option(value="1,1,-10") Indefinite (1 reach and -10 DP and 1 mana)
           div.form-group
             label(for="reachAOE") Scale
-            select#reachAOE.form-control(v-model="reachAOE")
+            select#reachAOE.form-control(v-model="reach.aoe")
               //- value is [reach cost], [dp modifier]
               option(value="0,0") 1 subject, largest subject size 5, arm's reach from a point
               option(value="0,-2") 2 subjects, largest 6, small room (-2 DP)
@@ -105,9 +105,9 @@ div#app
               option(value="1,-10") 160 subjects, largest 30, campus or small neighborhood (1 reach and -10 DP)
           div.form-group.mb-0
             label(for="reachPotency") Potency
-            input#reachPotency.form-control(type="number" v-model.number="reachPotency" min="1")
+            input#reachPotency.form-control(type="number" v-model.number="reach.potency" min="1")
           div.form-check
-            input#reachPotencyAdvanced.form-check-input(type="checkbox" v-model="reachPotencyAdvanced")
+            input#reachPotencyAdvanced.form-check-input(type="checkbox" v-model="reach.potencyAdvanced")
             label(for="reachPotencyAdvanced") +2 DP to withstand dispellation (1 reach)
           hr
           h5 Yantras
@@ -125,7 +125,7 @@ div#app
           br
           div.form-group
             label(for="yantraRitualTime") Extend ritual interval increase (+1 DP per)
-            input#yantraRitualTime.form-control(type="number" v-model.number="yantraRitualTime" min="0" max="5" :disabled="reachCastingTime === 'Instant'")
+            input#yantraRitualTime.form-control(type="number" v-model.number="yantraRitualTime" min="0" max="5" :disabled="reach.castingTime === 'Instant'")
           hr
           h5 Paradox modifiers
           div.form-check(v-for="mod in paradoxModifiers")
@@ -216,14 +216,15 @@ export default {
       casterCorrespondingArcanum: 1,
       arcanaType: 'Ruling',
       castingMethod: 'Normal',
-      effectReaches: 0,
-      reachCastingTime: 'Ritual',
-      reachRange: 'Touch',
-      reachDuration: '0,0,0',
-      reachAOE: '0,0',
-      reachPotency: 1,
-      reachPotencyAdvanced: false,
-      modifyingReaches: 0,
+      reach: {
+        effect: 0,
+        castingTime: 'Ritual',
+        range: 'Touch',
+        duration: '0,0,0',
+        aoe: '0,0',
+        potency: 1,
+        potencyAdvanced: false
+      },
       yantras: [
         { name: 'Demesne', dp: '2', checked: false },
         { name: 'Environment', dp: '1', checked: false },
@@ -268,9 +269,18 @@ export default {
           }
         }
       }
-      val += parseInt(this.reachDuration.split(',')[2])
-      val += parseInt(this.reachAOE.split(',')[1])
-      return val
+      val += parseInt(this.reach.duration.split(',')[2])
+      val += parseInt(this.reach.aoe.split(',')[1])
+      if (this.reach.potency > 1) {
+        val -= this.reach.potency * 2
+      }
+      if (val > 0) {
+        return `Roll ${val} ${val > 1 ? 'dice' : 'die'}`
+      }
+      if (val > -6) {
+        return 'Roll a chance die'
+      }
+      return 'You cannot cast the spell like this'
     },
     paradoxTotal () {
       let val = 0
@@ -303,29 +313,29 @@ export default {
         val += 1
       }
       val += this.manaReduceParadox
-      if (this.reachDuration.split(',')[0] === '1') {
+      if (this.reach.duration.split(',')[0] === '1') {
         val += 1
       }
       return val
     },
     reachesUsed () {
       let val = 0
-      val += this.effectReaches
-      val += parseInt(this.reachDuration.split(',')[1])
-      val += parseInt(this.reachAOE.split(',')[0])
-      if (this.reachCastingTime === 'Instant') {
+      val += this.reach.effect
+      val += parseInt(this.reach.duration.split(',')[1])
+      val += parseInt(this.reach.aoe.split(',')[0])
+      if (this.reach.castingTime === 'Instant') {
         val += 1
       }
-      if (this.reachRange === 'Sensory') {
+      if (this.reach.range === 'Sensory') {
         val += 1
       }
-      if (this.reachPotency > 1) {
-        val += this.reachPotency - 1
+      if (this.reach.potencyAdvanced) {
+        val += 1
       }
       return val
     },
     castingTime () {
-      if (this.reachCastingTime === 'Ritual') {
+      if (this.reach.castingTime === 'Ritual') {
         // time based on gnosis * additional multiplier for bonus
         let minutes = ritualTimeFromGnosis[this.gnosis]
         if (this.yantraRitualTime > 0) {
@@ -343,7 +353,7 @@ export default {
       }
     },
     totalPotency () {
-      return 1 + this.reachPotency - 1
+      return 1 + this.reach.potency - 1
     },
     primarySpellFactorBoost () {
       return this.casterCorrespondingArcanum - 1
@@ -391,17 +401,17 @@ export default {
     },
     castingMethod (newVal, oldVal) {
       if (newVal === 'Rote from grimoire') {
-        this.reachCastingTime = 'Ritual'
-        this.reachRange = 'Touch'
-        this.reachDuration = '0,0,0'
-        this.reachAOE = '0,0'
-        this.reachPotency = 1
+        this.reach.castingTime = 'Ritual'
+        this.reach.range = 'Touch'
+        this.reach.duration = '0,0,0'
+        this.reach.aoe = '0,0'
+        this.reach.potency = 1
       }
       if (newVal.indexOf('Rote') === -1) {
         this.yantras[4].checked = false
       }
     },
-    reachCastingTime (newVal, oldVal) {
+    'reach.CastingTime' (newVal, oldVal) {
       if (newVal === 'Instant') {
         this.yantraRitualTime = 0
       }
