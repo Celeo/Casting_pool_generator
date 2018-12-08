@@ -10,7 +10,6 @@ div#app
           //- === LEFT ===
           h2 Entry
           br
-          //- Basics
           div.form-group
             label(for="spellHighestArcanum") Spell highest arcanum
             input#spellHighestArcanum.form-control(type="number" v-model.number="spellHighestArcanum" min="1" max="5")
@@ -26,7 +25,6 @@ div#app
           hr
           div.row
             div.col
-              //- The kind of spell for the caster
               h5 Arcana type
               div.form-check
                 input.form-check-input(type="radio" id="arcanaTypeRuling" v-model="arcanaType" value="Ruling")
@@ -38,7 +36,6 @@ div#app
                 input.form-check-input(type="radio" id="arcanaTypeInferior" v-model="arcanaType" value="Inferior")
                 label.form-check-label(for="arcanaTypeInferior") Inferior
             div.col.left-border
-              //- If the caster really knows this spell
               h5 Special spells
               div.form-check
                 input.form-check-input(type="radio" id="castingMethodRoteGrimoire" v-model="castingMethod" value="Rote from grimoire")
@@ -58,10 +55,8 @@ div#app
           hr
           h5 Reach
           div.form-group
-            //- This bit has to be entered by the user as total, because I'm not going to enter all the spells into a JSON file and load it up
             label(for="effectReaches") Reaches for spell effect changes (these are listed in the spell description)
             input#effectReaches.form-control(type="number" v-model.number="effectReaches" min="0")
-          //- For the reach factors, I can list those out and allow the user to select from them
           div.row
             div.col
               div.form-check
@@ -77,7 +72,6 @@ div#app
               div.form-check
                 input.form-check-input(type="radio" id="reachRangeInstant" v-model="reachRange" value="Sensory")
                 label.form-check-label(for="reachRangeInstant") Sensory range (1 reach)
-          //- Potency here?
           br
           div.form-group
             label(for="reachDurationSelection") Duration
@@ -118,11 +112,11 @@ div#app
           div.row
             div.col
               div.form-check(v-for="yantra in yantras.slice(0, 7)")
-                input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked")
+                input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked" :disabled="yantra.name === 'Murda' && castingMethod.indexOf('Rote') === -1")
                 label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }}
             div.col
               div.form-check(v-for="yantra in yantras.slice(7)")
-                input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked")
+                input.form-check-input(:id="'yantra' + yantra.name" type="checkbox" v-model="yantra.checked" :disabled="yantra.name === 'Murda' && castingMethod.indexOf('Rote') === -1")
                 label(:for="'yantra' + yantra.name") {{ yantra.name }}: {{ yantra.dp }}
           br
           div.form-group(v-show="reachCastingTime === 'Ritual'")
@@ -144,7 +138,7 @@ div#app
             strong Paradox pool:
               span  {{ paradoxTotal }}
           //- total potency?
-          //- total casting time?
+          //- total casting time - time it takes to cast (casting time * gnosis + grimoire + yantra count)?
           //- mana cost
           div(v-show="additionalMessages.length > 0")
             h4 Additional notes
@@ -223,7 +217,7 @@ export default {
       if (this.castingMethod === 'Rote from grimoire') {
         messages.push('Cannot use reach to cast the spell')
         messages.push('Cannot cast the spell instantly')
-        messages.push('Ritual casting time is doubled')
+        messages.push('Ritual cast time is doubled')
         messages.push('Dice pool gets the rote quality')
       }
       if (this.castingMethod === 'Rote self-designed') {
@@ -236,7 +230,6 @@ export default {
       if (this.castingMethod === 'Praxis') {
         messages.push('3 successes means an exceptional success')
       }
-      // time it takes to cast (casting time * gnosis + grimoire + yantra count)
       return messages
     }
   },
@@ -255,6 +248,9 @@ export default {
       if (newVal === 'Rote from grimoire') {
         this.reachCastingTime = 'Ritual'
       }
+      if (newVal.indexOf('Rote') === -1) {
+        this.yantras[4].checked = false
+      }
     },
     reachCastingTime (newVal, oldVal) {
       if (newVal === 'Instant') {
@@ -266,7 +262,7 @@ export default {
 
 /*
   Dev notes
-    - What's the bit about free 'primary spell factor' increase in the book?
+    - Need to implement the free primary spell factor increase based on spell arcanum vs caster arcanum
 */
 </script>
 
