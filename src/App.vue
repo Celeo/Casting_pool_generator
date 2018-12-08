@@ -21,7 +21,7 @@ div#app
             div.col
               div.form-group
                 label(for="gnosis") Caster Gnosis
-                input#gnosis.form-control(type="number" v-model.number="gnosis" min="1" max="8")
+                input#gnosis.form-control(type="number" v-model.number="gnosis" min="1" max="10")
           hr
           div.row
             div.col
@@ -162,6 +162,19 @@ div#app
 </template>
 
 <script>
+const paradoxFromGnosis = {
+  1: 1,
+  2: 1,
+  3: 2,
+  4: 2,
+  5: 2,
+  6: 3,
+  7: 3,
+  8: 3,
+  9: 4,
+  10: 4
+}
+
 export default {
   data () {
     return {
@@ -196,7 +209,6 @@ export default {
       yantraRitualTime: 0,
       paradoxModifiers: [
         { name: 'Inured to spell', dp: '2', checked: false },
-        // { name: 'Per Paradox roll for you in the scame scene', dp: '1', checked: false },
         { name: 'Sleepers witness obvious casting', dp: '1', checked: false },
         { name: 'Dedicated tool as a yantra', dp: '-2', checked: false }
       ],
@@ -228,10 +240,9 @@ export default {
       return val
     },
     paradoxTotal () {
-      // TODO the amount of paradox added per reach is dependent on the caster's gnosis
       let val = 0
       const fromReaches = this.reachesUsed - this.freeReaches
-      val += fromReaches < 0 ? 0 : fromReaches
+      val += fromReaches < 0 ? 0 : fromReaches * paradoxFromGnosis[this.gnosis]
       for (let mod of this.paradoxModifiers) {
         if (mod.checked) {
           val += parseInt(mod.dp)
