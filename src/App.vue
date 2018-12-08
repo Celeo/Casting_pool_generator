@@ -4,11 +4,11 @@ div#app
     span.navbar-brand
       a(href="" style="color: white;") Casting pool generator
   main.py-md-4.pl-md-5.pr-md-5(role="main")
-    div.container
+    div.container-fluid
       div.row
-        div.col-9
+        div.col-lg-9.col-md-12
           //- === LEFT ===
-          h2 Entry
+          h2.pt-2 Entry
           br
           div.form-group
             label(for="spellHighestArcanum") Spell highest arcanum
@@ -137,7 +137,8 @@ div#app
           div.form-group
             label(for="manaReduceParadox") Mana to reduce paradox DP
             input#manaReduceParadox.form-control(type="number" v-model.number="manaReduceParadox" min="0")
-        div.col.left-border
+        div.col.left-border-lg
+          hr.d-lg-none.d-xl-none
           //- == RIGHT ===
           h2 Calculations
           br
@@ -423,4 +424,8 @@ export default {
 <style lang="stylus">
 .left-border
   border-left: 1px solid grey
+
+.left-border-lg
+  @media (min-width: 992px)
+    border-left: 1px solid grey
 </style>
