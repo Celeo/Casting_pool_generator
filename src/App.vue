@@ -209,6 +209,19 @@ const yantraLimitFromGnosis = {
   10: 6
 }
 
+const manaPerRoundFromGnosis = {
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 10,
+  10: 15
+}
+
 export default {
   data () {
     return {
@@ -344,11 +357,14 @@ export default {
         }
         return `${minutes} minute${minutes > 1 ? 's' : ''}`
       } else {
-        // 1 round + number of rounds required by yantas activated > 1
+        // 1 round + number of rounds to use all yantras + number of rounds to spend all mana
         let rounds = 1
         const yantasUsed = this.yantras.filter(e => e.checked).length
         if (yantasUsed > 1) {
           rounds += yantasUsed - 1
+        }
+        if (this.manaCost > manaPerRoundFromGnosis[this.gnosis]) {
+          rounds += Math.ceil(this.manaCost / manaPerRoundFromGnosis[this.gnosis])
         }
         return `${rounds} round${rounds > 1 ? 's' : ''}`
       }
