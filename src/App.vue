@@ -10,18 +10,18 @@ div#app
           //- === LEFT ===
           h2.pt-2 Entry
           br
-          div.form-group
-            label(for="spellHighestArcanum") Spell highest arcanum
-            input#spellHighestArcanum.form-control(type="number" v-model.number="spellHighestArcanum" min="1" max="5")
           div.row
             div.col
               div.form-group
-                label(for="casterCorrespondingArcanum") Caster corresponding arcanum
+                label(for="casterCorrespondingArcanum") Caster highest relevant Arcanum
                 input#casterCorrespondingArcanum.form-control(type="number" v-model.number="casterCorrespondingArcanum" min="1" max="5")
             div.col
               div.form-group
                 label(for="gnosis") Caster Gnosis
                 input#gnosis.form-control(type="number" v-model.number="gnosis" min="1" max="10")
+          div.form-group
+            label(for="spellHighestArcanum") Spell highest Arcanum
+            input#spellHighestArcanum.form-control(type="number" v-model.number="spellHighestArcanum" min="1" max="5")
           hr
           div.row
             div.col
