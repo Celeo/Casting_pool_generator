@@ -158,7 +158,7 @@ div#app
           hr
           p
             strong Dice pool:
-              span  {{ dicePool }}
+              span  {{ dicePool }} ({{ successChance }})
           p
             strong Paradox pool:
               span  {{ paradoxTotal }}
@@ -166,6 +166,7 @@ div#app
             h4 Additional notes
             ul.pl-3
               li(v-for="message in additionalMessages") {{ message }}
+          p.pt-5.small * Assuming the pool doesn't have the rote quality
 </template>
 
 <script>
@@ -272,7 +273,7 @@ export default {
         return this.casterCorrespondingArcanum - this.spellHighestArcanum + 1
       }
     },
-    dicePool () {
+    dicePoolRaw () {
       let val = 0
       val += this.gnosis
       val += this.casterCorrespondingArcanum
@@ -288,6 +289,10 @@ export default {
       if (this.reach.potency > 1) {
         val -= this.reach.potency * 2
       }
+      return val
+    },
+    dicePool () {
+      const val = this.dicePoolRaw
       if (val > 0) {
         return `Roll ${val} ${val > 1 ? 'dice' : 'die'}`
       }
@@ -295,6 +300,16 @@ export default {
         return 'Roll a chance die'
       }
       return 'You cannot cast the spell like this'
+    },
+    successChance () {
+      const pool = this.dicePoolRaw
+      let chance = 0
+      if (pool > 0) {
+        chance = Math.round((1 - Math.pow(0.7, pool)) * 100)
+      } else if (pool > -6) {
+        chance = 30
+      }
+      return `${chance}% chance*`
     },
     paradoxTotal () {
       let val = 0
@@ -444,4 +459,7 @@ export default {
 .left-border-lg
   @media (min-width: 992px)
     border-left: 1px solid grey
+
+.small
+  font-size 75%
 </style>
