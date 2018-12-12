@@ -161,7 +161,7 @@ div#app
               span  {{ dicePool }} ({{ successChance }})
           p
             strong Paradox pool:
-              span  {{ paradoxTotal }}
+              span  {{ paradoxPool }} ({{ paradoxChance }})
           div(v-show="additionalMessages.length > 0")
             h4 Additional notes
             ul.pl-3
@@ -221,6 +221,24 @@ const manaPerRoundFromGnosis = {
   8: 8,
   9: 10,
   10: 15
+}
+
+const diceChanceCast = (pool) => {
+  let chance = 0
+  if (pool > 0) {
+    chance = Math.round((1 - Math.pow(0.7, pool)) * 100)
+  } else if (pool > -6) {
+    chance = 30
+  }
+  return `${chance}% chance*`
+}
+
+const diceChanceNormal = (pool) => {
+  let chance = 0
+  if (pool > 0) {
+    chance = Math.round((1 - Math.pow(0.7, pool)) * 100)
+  }
+  return `${chance}% chance*`
 }
 
 export default {
@@ -302,16 +320,16 @@ export default {
       return 'You cannot cast the spell like this'
     },
     successChance () {
-      const pool = this.dicePoolRaw
-      let chance = 0
-      if (pool > 0) {
-        chance = Math.round((1 - Math.pow(0.7, pool)) * 100)
-      } else if (pool > -6) {
-        chance = 30
-      }
-      return `${chance}% chance*`
+      return diceChanceCast(this.dicePoolRaw)
     },
-    paradoxTotal () {
+    paradoxChance () {
+      let { val, any } = this.paradoxPoolRaw
+      if (any && val === 0) {
+        val = 1
+      }
+      return diceChanceNormal(val)
+    },
+    paradoxPoolRaw () {
       let val = 0
       let any = false
       const fromReaches = this.reachesUsed - this.freeReaches
@@ -331,6 +349,10 @@ export default {
       }
       val -= this.manaReduceParadox
       val = val > 0 ? val : 0
+      return { val, any }
+    },
+    paradoxPool () {
+      let { val, any } = this.paradoxPoolRaw
       if (any && val === 0) {
         val = '1 chance die'
       }
